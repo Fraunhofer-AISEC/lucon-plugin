@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: de.fhg.aisec.lucon.ide
+Bundle-Vendor: Fraunhofer AISEC
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: de.fhg.aisec.lucon.ide; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: de.fhg.aisec.lucon,
+ org.eclipse.xtext.ide,
+ org.eclipse.xtext.xbase.ide,org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
+ org.eclipse.equinox.app,
+ org.eclipse.core.runtime,
+ org.eclipse.swt,
+ org.eclipse.jface,
+ org.eclipse.ui.workbench
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Export-Package: de.fhg.aisec.lucon.ide.contentassist.antlr.internal,
+ de.fhg.aisec.lucon.ide.contentassist.antlr

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+	<feature id="de.fhg.aisec.lucon.feature" version="0.0.0">
+		<category name="main"/>
+	</feature>
+	<!--<feature id="de.fhg.aisec.lucon.feature.source" version="0.0.0">
+		<category name="main.source"/>
+	</feature> -->
+	<category-def name="main" label="LUCON"/>
+	<!--<category-def name="main.source" label="LUCON (Sources)"/> -->
+</site>

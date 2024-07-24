@@ -1,0 +1,70 @@
+service {
+	id anonymizer
+	
+	// Defines the endpoints for which this service description applies
+	endpoint ".*anonymizer.*"
+		
+	// Properties describe the service's behavior. This one blinds fields "surname" and "name"
+	properties 
+			myProp : "anonymize('surname', 'name')"
+			
+	// Transformation of labels
+	removes_label personal, privates
+	creates_label anonymized
+}
+
+/**
+ * Data from HiveMQ MQTT Broker is marked as public sensor data
+ */
+service {
+	id hiveMqttBroker
+	endpoint "^paho:.*?tcp://broker.hivemq.com:1883.*"
+	properties type: "public"
+	creates_label public_data, sensor_data
+}
+
+/**
+ * ActiveMQ test queue
+ */
+service {
+	id testQueue
+	endpoint "^amqp:.*?:test"
+}
+
+service {
+	id hadoopCluster
+	
+	// Defines the endpoints for which this service description applies
+	endpoint "hdfs://.*"
+
+	
+	// Capabilities can be requested by a flow_rule. If not requested, nothing will happen
+	capabilities
+		deletion: delete_after_days(X)
+	
+	// Properties describe the service's behavior. This one blinds fields "surname" and "name".
+	properties
+		anonymizes : "anonymize('surname', 'name')"
+}
+
+flow_rule {
+	id deleteAfterOneMonth				// Route id
+	when { endpoint "hdfs" } 			// Target
+	receives private					// Condition
+	require delete_after_days(X), X<30	// Obligation	
+		otherwise drop
+}
+
+flow_rule {
+	id anotherRule						// Route id
+	when hiveMqttBroker					// Target
+	receives private					// Condition
+	decide drop
+}
+
+flow_rule {
+	id what
+	when testQueue
+	receives public_data
+	decide allow	
+}

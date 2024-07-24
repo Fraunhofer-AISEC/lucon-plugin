@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension-point id="splashExtension" name="Splash Extensions" schema="schema/splashExtension.exsd"/>
+	<extension id="luconProduct" point="org.eclipse.core.runtime.products"> 
+      <product application="org.eclipse.ui.ide.workbench" name="Lucon Editor">
+         <property
+               name="appName"
+               value="Lucon Editor">
+         </property>
+      </product> 
+   </extension>
+</plugin>

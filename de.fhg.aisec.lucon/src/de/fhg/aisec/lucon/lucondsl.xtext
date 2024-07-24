@@ -1,0 +1,169 @@
+grammar de.fhg.aisec.lucon.Lucondsl with org.eclipse.xtext.common.Terminals
+
+generate lucondsl "http://www.fhg.de/aisec/lucon/LUCON"
+
+/**
+ * LUCON (Logic based Usage Control) policy language grammar.
+ * 
+ * This is the declaration of the LUCON DSL grammar and source of all auto-generated artifacts.
+ * 
+ * @author Julian Schuette (julian.schuette@aisec.fraunhofer.de)
+ */
+
+// A policy describes services and defines flow rules
+Policy : 
+    (rules+=FlowRule | services+=StandaloneService)*;
+
+StandaloneService:
+	'service' '{'
+		'id' name=ID
+		spec=ServiceBody
+	'}';
+
+// Services have properties and capabilities
+ServiceBody:
+    'endpoint' url=FilterExpression
+    & ('properties' properties+=Property)* 
+    & ('capabilities' capabilities+=Capability)* 
+    & (creates+=CreatesLabel | removes+=RemovesLabel)*
+;
+
+CreatesLabel:
+	'creates_label' labels+=Label (OP1000XFY labels+=Label)*
+;
+
+RemovesLabel:
+	'removes_label' labels+=Label (OP1000XFY labels+=Label)*
+;
+
+Label:
+	name=ID ('(' terms=ExpressionInfinity ')')?
+;
+
+FilterExpression:
+	regex=STRING
+;
+
+// A description is simply an expression in the form of a string
+Property:
+	name=ID OP600XFY expr=STRING;
+
+// A capability is also an expression in the form of a string
+Capability :
+	name=ID OP600XFY expr=ExpressionInfinity; 
+
+// Flow rules refer to messages with labels and services
+FlowRule:
+    'flow_rule' '{'
+		'id' name=ID 
+		('priority' priority=INTEGER)?
+		('description' description=STRING)?
+    	'when' ('*' | '{' inline=ServiceBody '}' | saSvcs+=[StandaloneService] ('|' saSvcs+=[StandaloneService])*)
+	    'receives' ('{' receivesLabels=ExpressionInfinity '}' | receivesAny='*')
+     	('decide' decision=DECISION (obligations+=Obligation)*)
+    '}'
+; 
+
+Obligation:
+	{Obligation} 'require' action=ExpressionInfinity ('otherwise' alternativeDecision=DECISION)?
+;
+
+terminal INTEGER:
+	('0') | (('-')? ('1'..'9') ('0'..'9')*)
+;
+
+terminal DECISION:
+	'drop' | 'error' | 'allow'
+;
+// ------------- Prolog part ------------------------
+
+terminal OP1000XFY:
+	',' | 'and';
+
+
+terminal OP1100XFY:
+	';' | '|' | 'or';
+
+terminal OP900FX:
+	'~';
+
+terminal OP700XFX:
+	'<' | '=' | '=..' | '=@=' | '=:=' | '=<' | '==' | '=\\=' | '>' | '>=' | '@<' | '@=<' | '@>' | '@>=' | '\\=' | '\\=='
+	| 'is';
+
+terminal OP600XFY:
+	':';
+
+terminal OP500YFX:
+	'+' | '-' | '/\\' | '\\/' | 'xor';
+
+terminal OP500FX:
+	'+' | '-' | '?' | '\\';
+
+terminal OP400YFX:
+	'*' | '/' | '//' | 'rdiv' | '<<' | '>>' | 'mod' | 'rem';
+
+terminal OP200XFX:
+	'**';
+
+terminal OP200XFY:
+	'^';
+
+//terminal PL_ATOM:
+//	'a'..'z' ('A'..'Z' | 'a'..'z' | '0'..'9' | '_')*;
+
+PL_ATOMS:
+	{PL_ATOMS} ('.' | '!'  | name=ID | OP1100XFY | OP1000XFY | OP900FX
+	| OP700XFX | OP600XFY | OP500YFX | OP500FX | OP400YFX | OP200XFX | OP200XFY);
+
+terminal PL_VARIABLE:
+	('A'..'Z' | '_') ('A'..'Z' | 'a'..'z' | '0'..'9' | '_')*;
+
+	// http://www.csupomona.edu/~jrfisher/www/prolog_tutorial/4.html
+// xfx infix nonassociative 
+// xfy infix right-associative 
+// yfx infix left-associative 
+// fx prefix nonassociative 
+// fy prefix right-associative 
+// xf postfix nonassociative 
+// yf postfix left-associative
+ExpressionInfinity returns Expression:
+	Expression1100xfy;
+
+Expression1100xfy returns Expression:
+	Expression1000xfy ({Expression.left=current} op=OP1100XFY right=Expression1100xfy)?;
+
+Expression1000xfy returns Expression:
+	Expression900fx ({Expression.left=current} op=OP1000XFY right=Expression1000xfy)?;
+
+Expression900fx returns UnaryExpression:
+	(op=OP900FX)? right=Expression700xfx;
+
+Expression700xfx returns Expression:
+	Expression600xfy ({Expression.left=current} op=OP700XFX right=Expression600xfy)?;
+
+Expression600xfy returns Expression:
+	Expression500yfx ({Expression.left=current} op=OP600XFY right=Expression600xfy)?;
+
+Expression500yfx returns Expression:
+	Expression500fx ({Expression.left=current} op=OP500YFX right=Expression500fx)*;
+
+Expression500fx returns UnaryExpression:
+	(op=OP500FX)? right=Expression400yfx;
+
+Expression400yfx returns Expression:
+	Expression200xfx ({Expression.left=current} op=OP400YFX right=Expression200xfx)*;
+
+Expression200xfx returns Expression:
+	Expression200xfy ({Expression.left=current} op=OP200XFX right=Expression200xfy)?;
+
+Expression200xfy returns Expression:
+	Expression0 ({Expression.left=current} op=OP200XFY right=Expression200xfy)?;
+
+Expression0 returns Expression:
+	{AtomExpression} atom=PL_ATOMS ('(' terms=ExpressionInfinity ')')?
+	| {VariableExpression} name=PL_VARIABLE
+	| {StringExpression} value=STRING
+	| {NumberExpression} value=INT
+	| {ListExpression} '[' (head=ExpressionInfinity ('|' tail=ExpressionInfinity)?)? ']'
+| '(' ExpressionInfinity ')';
